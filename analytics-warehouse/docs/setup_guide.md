@@ -10,6 +10,8 @@ Do the stages in order, and run the check at the end of each stage before moving
 
 ## Stage 1: create the warehouse project
 
+> **Status 2026-10-26:** done. Your warehouse project is **Cloud data warehouse** (`icdibwdcxesjimmolpnh`, East US / N. Virginia). The 001, 002 and 003 SQL files have been applied there, and `etl_reader` was created in the ERP project. Start at Stage 2, step 2 (passwords).
+
 1. Go to [supabase.com/dashboard](https://supabase.com/dashboard) → **New project**.
 2. Organization: your existing one (`Interview_Supplychain`). The free plan allows two active projects.
 3. Name: `supply-chain-analytics-warehouse`.

@@ -24,6 +24,7 @@ end $$;
 grant usage on schema etl, staging, dw to etl_loader;
 grant select, insert, update on all tables in schema etl, staging, dw to etl_loader;
 grant usage, select on all sequences in schema etl, staging, dw to etl_loader;
+grant usage on schema analytics to etl_loader;
 grant select on all tables in schema analytics to etl_loader;   -- lets --check and tests read views
 alter role etl_loader set statement_timeout = '60s';
 
