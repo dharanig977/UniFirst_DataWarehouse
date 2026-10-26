@@ -1,0 +1,23 @@
+# Render Blueprint for the warehouse ETL scheduler (see analytics-warehouse/docs/setup_guide.md).
+# Only the ETL cron job is defined here; the ERP web app stays on Vercel.
+services:
+  - type: cron
+    name: supply-chain-etl
+    runtime: python
+    plan: starter
+    region: ohio            # same region as both Supabase projects (us-east-2)
+    schedule: "* * * * *"   # every minute, UTC. Render never runs two at once.
+    rootDir: analytics-warehouse
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m etl.run --triggered-by schedule
+    envVars:
+      - key: SOURCE_DATABASE_URL
+        sync: false         # you paste the value in Render's dashboard; it is never in Git
+      - key: WAREHOUSE_DATABASE_URL
+        sync: false
+      - key: ETL_BATCH_SIZE
+        value: "1000"
+      - key: ETL_LOOKBACK_MINUTES
+        value: "5"
+      - key: PYTHON_VERSION
+        value: "3.12.7"

@@ -1,0 +1,37 @@
+# Runs the ETL test suite against a throwaway PostgreSQL. Never touches Supabase.
+name: Warehouse tests
+
+on:
+  pull_request:
+    paths: ["analytics-warehouse/**", ".github/workflows/warehouse-tests.yml"]
+  push:
+    branches: [main]
+    paths: ["analytics-warehouse/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: analytics-warehouse
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -v
+        env:
+          TEST_POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/postgres

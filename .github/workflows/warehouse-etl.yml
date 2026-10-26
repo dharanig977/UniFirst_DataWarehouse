@@ -1,0 +1,48 @@
+# Runs the warehouse ETL on GitHub's machines. Use it for the first manual
+# runs (Actions tab -> Warehouse ETL -> Run workflow). Credentials come from
+# repository secrets SOURCE_DATABASE_URL and WAREHOUSE_DATABASE_URL.
+name: Warehouse ETL
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "check = test connections only; run = one ETL batch"
+        type: choice
+        options: [check, run]
+        default: check
+  # Optional free fallback scheduler. GitHub's minimum is every 5 minutes and
+  # runs are often delayed, so it cannot meet a 1-minute target. Leave it off
+  # while Render runs the schedule, or two schedulers will take turns (safe, but wasteful).
+  # schedule:
+  #   - cron: "*/5 * * * *"
+
+concurrency:
+  group: warehouse-etl
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  etl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: analytics-warehouse
+    env:
+      SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_URL }}
+      WAREHOUSE_DATABASE_URL: ${{ secrets.WAREHOUSE_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Check connections
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'check'
+        run: python -m etl.run --check
+      - name: Run one ETL batch
+        if: github.event_name == 'schedule' || inputs.mode == 'run'
+        run: python -m etl.run --triggered-by ${{ github.event_name == 'schedule' && 'schedule' || 'manual' }}
