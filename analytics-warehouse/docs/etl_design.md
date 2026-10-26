@@ -9,6 +9,8 @@ extract.py  ->  validate.py  ->  load_staging.py  ->  load_dw.py      run.py tie
 
 ## 1. Extract: strategy per table
 
+This section covers the ERP. The CRM tables have `updated_at` and soft deletes, so they are read incrementally; see `crm_source.md`.
+
 Checked in the real schema: **no table has `created_at`, `updated_at` or any other change marker**, and all IDs are text. So:
 
 | Table | Change marker? | Strategy | Why it's safe |

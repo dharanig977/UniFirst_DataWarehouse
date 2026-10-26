@@ -15,6 +15,8 @@ services:
         sync: false         # you paste the value in Render's dashboard; it is never in Git
       - key: WAREHOUSE_DATABASE_URL
         sync: false
+      - key: CRM_DATABASE_URL
+        sync: false         # optional; without it only the ERP is loaded
       - key: ETL_BATCH_SIZE
         value: "1000"
       - key: ETL_LOOKBACK_MINUTES

@@ -28,15 +28,15 @@ def _clean_value(table: SourceTable, column: str, value):
             return None
         if column in table.upper_codes:
             value = value.upper()
-        elif column == "status" and table.statuses:
-            match = {s.lower(): s for s in table.statuses}.get(value.lower())
+        elif column in table.statuses:
+            match = {s.lower(): s for s in table.statuses[column]}.get(value.lower())
             value = match or value
     return value
 
 
 def clean_row(table: SourceTable, row: dict) -> dict:
     cleaned = {c: _clean_value(table, c, row.get(c)) for c in table.columns}
-    if table.name == "sales_orders" and cleaned["shipped_qty"] is None:
+    if table.source == "erp" and table.name == "sales_orders" and cleaned["shipped_qty"] is None:
         cleaned["shipped_qty"] = 0
     return cleaned
 
@@ -56,7 +56,7 @@ def row_problems(table: SourceTable, row: dict, today: dt.date) -> list[str]:
         d = v.date() if isinstance(v, dt.datetime) else v
         if d < MIN_DATE or d > today + dt.timedelta(days=MAX_FUTURE_DAYS):
             problems.append(f"{c} is outside the plausible range ({d})")
-    if table.name == "purchase_orders":
+    if table.source == "erp" and table.name == "purchase_orders":
         if row.get("order_date") and row.get("expected_date") and row["expected_date"] < row["order_date"]:
             problems.append("expected_date is before order_date")
     # reserved_qty > snapshot_qty is kept, not rejected: over-reservation is a real
@@ -84,19 +84,18 @@ def to_json(row: dict) -> str:
 def validate(table: SourceTable, raw_rows: list[dict], today: dt.date):
     """Return (accepted_rows, rejected) where rejected is a list of (business_key, reason, original_row)."""
     accepted, rejected = [], []
-    by_key: dict[str, list[tuple[dict, dict]]] = {}
+    by_key: dict[tuple, list[tuple[dict, dict]]] = {}
     for raw in raw_rows:
         row = clean_row(table, raw)
         problems = row_problems(table, row, today)
-        key = row.get(table.key)
         if problems:
-            rejected.append((str(key if key is not None else raw.get(table.key)), "; ".join(problems), raw))
+            rejected.append((table.key_text(row), "; ".join(problems), raw))
             continue
-        by_key.setdefault(key, []).append((row, raw))
+        by_key.setdefault(table.key_of(row), []).append((row, raw))
     for key, rows in by_key.items():
         if len(rows) > 1:  # e.g. 'po-1' and 'PO-1 ' both exist in the source
-            for _, raw in rows:
-                rejected.append((key, f"duplicate business key after cleaning ({len(rows)} rows)", raw))
+            for row, raw in rows:
+                rejected.append((table.key_text(row), f"duplicate business key after cleaning ({len(rows)} rows)", raw))
             continue
         row = rows[0][0]
         row["_row_hash"] = row_hash(table, row)

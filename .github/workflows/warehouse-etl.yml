@@ -1,6 +1,7 @@
 # Runs the warehouse ETL on GitHub's machines. Use it for the first manual
 # runs (Actions tab -> Warehouse ETL -> Run workflow). Credentials come from
-# repository secrets SOURCE_DATABASE_URL and WAREHOUSE_DATABASE_URL.
+# repository secrets SOURCE_DATABASE_URL, WAREHOUSE_DATABASE_URL and (optional)
+# CRM_DATABASE_URL.
 name: Warehouse ETL
 
 on:
@@ -34,6 +35,7 @@ jobs:
     env:
       SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_URL }}
       WAREHOUSE_DATABASE_URL: ${{ secrets.WAREHOUSE_DATABASE_URL }}
+      CRM_DATABASE_URL: ${{ secrets.CRM_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

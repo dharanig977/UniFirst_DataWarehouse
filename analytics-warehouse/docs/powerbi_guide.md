@@ -39,6 +39,7 @@ If you see a *SCRAM* or *password authentication* error, check that the user nam
 | `vw_purchase_order_exceptions` | one PO | open, overdue and late POs, remaining qty |
 | `vw_supplier_performance` | one supplier | on-time rate, average delay, open qty |
 | `vw_sales_demand` | product × warehouse × day | demand trend, 7-day average |
+| `vw_demand_actual_budget` | customer × product × month | Demand vs Actual vs Budget (see `crm_source.md` for its measures) |
 | `vw_data_quality` | one check | trust panel |
 | `vw_data_freshness` | one table | "data as of" card |
 | `vw_etl_runs` | one ETL run (last 14 days) | pipeline monitor |
@@ -81,9 +82,10 @@ Don't sum `calculated_on_hand_qty` across all snapshots: each row is a count at 
 3. **Purchasing:** an exception table filtered to `has_exception = TRUE`, a bar chart of `days_late` by supplier, and a slicer on `late_status`.
 4. **Suppliers:** a bar chart of on-time rate and a table of average delay and open qty.
 5. **Demand:** a line chart of `ordered_qty` by `order_date` with `rolling_7d_avg_daily_qty`, and a slicer on category and warehouse.
-6. **Data health:** `vw_data_quality` with conditional formatting on `status`, plus `vw_etl_runs`.
+6. **Demand vs Actual vs Budget:** see `docs/crm_source.md`.
+7. **Data health:** `vw_data_quality` with conditional formatting on `status`, plus `vw_etl_runs`.
 
-Put a text box on the overview page: *"Synthetic portfolio data. Values are estimates at current standard cost; the source has no sales prices."*
+Put a text box on the overview page: *"Synthetic portfolio data. Inventory and PO values are estimates at standard cost; sales amounts use prices from the demo CRM."*
 
 ## 6. Refresh
 

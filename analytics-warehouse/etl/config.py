@@ -28,6 +28,11 @@ def _url(name: str) -> str:
     return value
 
 
+def _optional_url(name: str) -> str | None:
+    value = os.environ.get(name, "").strip()
+    return None if not value or value == "replace_me" else value
+
+
 @dataclass(frozen=True)
 class Settings:
     source_url: str
@@ -37,8 +42,10 @@ class Settings:
     max_retries: int
     statement_timeout_s: int
     max_delete_fraction_pct: int
+    crm_url: str | None = None          # optional second source; skipped when not set
     pipeline_name: str = "supply_chain_etl"
-    source_system: str = "supabase_transactional"
+    source_system: str = "supabase_transactional"   # the ERP
+    crm_source_system: str = "aiven_crm"
 
 
 def load_settings() -> Settings:
@@ -50,4 +57,5 @@ def load_settings() -> Settings:
         max_retries=max(1, _int("ETL_MAX_RETRIES", 3)),
         statement_timeout_s=max(5, _int("ETL_STATEMENT_TIMEOUT_SECONDS", 45)),
         max_delete_fraction_pct=min(100, max(0, _int("ETL_MAX_DELETE_PERCENT", 20))),
+        crm_url=_optional_url("CRM_DATABASE_URL"),
     )
