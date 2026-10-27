@@ -3,15 +3,18 @@
 # repository secrets SOURCE_DATABASE_URL and WAREHOUSE_DATABASE_URL, plus (optional)
 # CRM_ETL_PASSWORD and CRM_DATABASE_CA for the read-only crm_etl_reader login on
 # the Aiven CRM. Without CRM_ETL_PASSWORD the run loads the ERP only.
+# Mode "setup" builds a new, empty warehouse (sql/001-007) with the warehouse
+# owner's connection string in WAREHOUSE_ADMIN_URL. It stops if the warehouse
+# already has tables, and it never touches a source.
 name: Warehouse ETL
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "check = test connections only; run = one ETL batch"
+        description: "setup = build the warehouse schemas; check = test connections only; run = one ETL batch"
         type: choice
-        options: [check, run]
+        options: [setup, check, run]
         default: check
   # Optional free fallback scheduler. GitHub's minimum is every 5 minutes and
   # runs are often delayed, so it cannot meet a 1-minute target. Leave it off
@@ -41,10 +44,25 @@ jobs:
       CRM_DATABASE_CA: ${{ secrets.CRM_DATABASE_CA }}
     steps:
       - uses: actions/checkout@v4
+      - name: Build the warehouse (sql/001-007)
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'setup'
+        env:
+          WAREHOUSE_ADMIN_URL: ${{ secrets.WAREHOUSE_ADMIN_URL }}
+        run: |
+          test -n "$WAREHOUSE_ADMIN_URL" || { echo "Add the WAREHOUSE_ADMIN_URL secret first."; exit 1; }
+          existing=$(psql "$WAREHOUSE_ADMIN_URL" -Atc "select count(*) from information_schema.tables where table_schema in ('etl','staging','dw')")
+          if [ "$existing" != "0" ]; then echo "The warehouse already has $existing tables; setup is only for a new, empty warehouse. Nothing changed."; exit 1; fi
+          for f in sql/00[1-7]_*.sql; do
+            echo "== $f"
+            psql "$WAREHOUSE_ADMIN_URL" -v ON_ERROR_STOP=1 -q -f "$f"
+          done
+          psql "$WAREHOUSE_ADMIN_URL" -c "select table_schema, count(*) as objects from information_schema.tables where table_schema in ('etl','staging','dw','analytics') group by 1 order by 1"
       - uses: actions/setup-python@v5
+        if: inputs.mode != 'setup'
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
+        if: inputs.mode != 'setup'
       - name: Check connections
         if: github.event_name == 'workflow_dispatch' && inputs.mode == 'check'
         run: python -m etl.run --check
