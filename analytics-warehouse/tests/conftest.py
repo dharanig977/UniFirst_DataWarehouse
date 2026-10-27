@@ -10,7 +10,8 @@ from etl.config import Settings
 ADMIN = os.environ.get("TEST_POSTGRES_URL")
 ROOT = Path(__file__).resolve().parents[1]
 WAREHOUSE_SQL = ("001_warehouse_schema.sql", "002_analytics_views.sql", "003_warehouse_roles.sql",
-                 "004_crm_source.sql", "005_demand_actual_budget_views.sql")
+                 "004_crm_source.sql", "005_demand_actual_budget_views.sql",
+                 "006_etl_console_views.sql")
 
 
 def _url(db):
