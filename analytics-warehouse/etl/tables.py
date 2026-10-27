@@ -1,7 +1,7 @@
 """What the pipeline knows about each source table.
 
 ERP columns match the real Supabase schema (checked 2026-10-26 with
-information_schema). CRM columns match crm-app/db/001_crm_schema.sql.
+information_schema). CRM columns match db/001_crm_schema.sql in the UniFirst_CRM repo.
 If a source changes, update this file and the warehouse SQL together.
 """
 from dataclasses import dataclass, field
