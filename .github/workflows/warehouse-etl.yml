@@ -12,15 +12,17 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "setup = build the warehouse schemas; check = test connections only; run = one ETL batch"
+        description: "setup = build the warehouse schemas; check = test connections only; run = one ETL batch; heartbeat = what the scheduler sends (runs only if the console schedule says a batch is due)"
         type: choice
-        options: [setup, check, run]
+        options: [setup, check, run, heartbeat]
         default: check
   # Free scheduler: a heartbeat every 15 minutes (UTC). Each heartbeat runs one
   # batch only if the console schedule (etl.etl_schedule) says one is due, so
   # pausing or changing the interval in the console still works. GitHub may
-  # start a scheduled run a few minutes late. Use this or the Render cron job in
-  # render.yaml, not both (two schedulers are safe but wasteful).
+  # start a scheduled run late or skip it. An outside timer (for example
+  # cron-job.org) can send the same heartbeat by starting this workflow with
+  # mode=heartbeat through the GitHub API. Heartbeats never overlap: the
+  # concurrency group below queues them and the ETL's lock skips a duplicate.
   schedule:
     - cron: "*/15 * * * *"
 
@@ -69,5 +71,5 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.mode == 'check'
         run: python -m etl.run --check
       - name: Run one ETL batch
-        if: github.event_name == 'schedule' || inputs.mode == 'run'
-        run: python -m etl.run --triggered-by ${{ github.event_name == 'schedule' && 'schedule' || 'manual' }}
+        if: github.event_name == 'schedule' || inputs.mode == 'run' || inputs.mode == 'heartbeat'
+        run: python -m etl.run --triggered-by ${{ (github.event_name == 'schedule' || inputs.mode == 'heartbeat') && 'schedule' || 'manual' }}
