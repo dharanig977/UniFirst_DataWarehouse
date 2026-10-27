@@ -26,6 +26,7 @@ sql/004_crm_source.sql            CRM staging tables, dim_customer, dim_budget_v
 sql/005_demand_actual_budget_views.sql   Demand vs Actual vs Budget view, CRM data-quality checks
 sql/006_etl_console_views.sql     views behind the ETL console (../etl-console) and its read-only login
 sql/007_etl_schedule.sql         batch schedule set from the console (pause, interval, Run now) and troubleshooting views
+sql/008_report_schemas.sql       rpt_inventory and rpt_demand: one star model of views per report
 sql/source_etl_reader_role.sql    read-only etl_reader login for the SOURCE project
 sql/validation_queries.sql        checks to run after each stage
 etl/                              the pipeline: extract -> validate -> load staging -> load dw -> log

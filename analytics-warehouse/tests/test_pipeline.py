@@ -5,6 +5,8 @@ Set TEST_POSTGRES_URL to an admin connection on a local server, e.g.
 The env fixture (conftest.py) creates fresh databases etl_test_source and etl_test_wh.
 """
 
+from decimal import Decimal
+
 import psycopg
 import pytest
 
@@ -130,3 +132,30 @@ def test_source_session_is_read_only(env):
     with connect_source(settings.source_url, 10) as conn:
         with pytest.raises(psycopg.errors.ReadOnlySqlTransaction):
             conn.execute("insert into raw.suppliers values ('X','x',1)")
+
+
+def test_report_schemas(env):
+    settings, src, wh = env
+    run(settings, "test")
+    # Network Health: UFS-1001 @ KY-DC-01 has 95 available, 20 still inbound on PO-10001
+    # and 12 ordered in the 28 days to the count, so it holds far more than 90 days of supply.
+    row = wh.execute("""select h.available_qty, h.inbound_qty, h.demand_qty_28d, h.lead_days, h.stock_status,
+                               h.suggested_order_qty
+                        from rpt_inventory.kpi_inventory_health h
+                        join rpt_inventory.dim_product p using (product_key)
+                        join rpt_inventory.dim_warehouse w using (warehouse_key)
+                        where p.product_id = 'UFS-1001' and w.warehouse_id = 'KY-DC-01'""").fetchone()
+    assert row == (95, 20, 12, 7, "Excess", 0)
+    assert wh.execute("select ordered_qty, shipped_qty, qty_fill_rate, order_fill_rate "
+                      "from rpt_inventory.kpi_fill_rate").fetchone() == (12, 5, Decimal("0.4167"), Decimal("0.0000"))
+    assert one(wh, "select count(*) from rpt_inventory.kpi_po_exception_reasons where exception_reason = 'Overdue'") == 2
+    # Every fact row finds its dimension rows (no orphans for Power BI relationships).
+    for fact, dims in {"rpt_inventory.fact_purchase_orders": ("product", "supplier", "warehouse"),
+                       "rpt_inventory.fact_inventory": ("product", "warehouse"),
+                       "rpt_demand.fact_sales_actual": ("product",)}.items():
+        for d in dims:
+            assert one(wh, f"select count(*) from {fact} f where not exists "
+                           f"(select 1 from {fact.split('.')[0]}.dim_{d} x where x.{d}_key = f.{d}_key)") == 0
+    # Both schemas are readable by the Power BI login and listed in the ETL console.
+    assert one(wh, "select has_table_privilege('powerbi_reader', 'rpt_demand.kpi_forecast_accuracy', 'select')")
+    assert one(wh, "select count(*) from analytics.vw_etl_analytics_views where view_name like 'rpt_%%'") == 21

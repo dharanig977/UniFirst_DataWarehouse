@@ -9,6 +9,8 @@ Built from the real source schema (checked 2026-10-26, six `raw` tables). Nothin
 | `staging` | One table per source table, same columns and types, plus ETL metadata columns starting with `_` | ETL |
 | `dw` | Star schema: 4 dimensions, 4 facts | ETL |
 | `analytics` | Views for Power BI | SQL only (no tables) |
+| `rpt_inventory` | Report 1, Distribution Network Health: a star model of views (see below) | SQL only (no tables) |
+| `rpt_demand` | Report 2, Demand vs Actual vs Budget (S&OP): a star model of views (see below) | SQL only (no tables) |
 | `etl` | Run log, watermarks, rejected records | ETL |
 
 ## Fact tables and their grain
@@ -131,6 +133,37 @@ erDiagram
         int available_qty
     }
 ```
+
+## Report schemas (sql/008_report_schemas.sql)
+
+Each report has its own schema, so a report can be connected on its own. Every object is a view over `dw`, so it is as fresh as the last ETL run. Shared dimensions (`dim_date`, `dim_product`) appear in both schemas. Dimensions keep rows deleted in the source (`is_active = false`) so older facts still find them.
+
+**`rpt_inventory`: Distribution Network Health** (Inventory, Sourcing, Distribution, Finance)
+
+| View | Grain | Joins on |
+|---|---|---|
+| `dim_date`, `dim_product`, `dim_warehouse`, `dim_supplier` | one row per member | `date_key`, `product_key`, `warehouse_key`, `supplier_key` |
+| `fact_inventory` | inventory count | product, warehouse, `snapshot_date_key` |
+| `fact_sales_orders` | sales order line (no Draft) | product, warehouse, `order_date_key` |
+| `fact_purchase_orders` | purchase order (no Draft), with lateness and exception reasons | product, warehouse, supplier, `order_date_key`, `expected_date_key` |
+| `fact_goods_receipts` | goods receipt | product, warehouse, supplier, `receipt_date_key` |
+| `kpi_inventory_health` | product x warehouse, latest count: days of supply, inbound, stock status (Stockout, Reorder now, Excess, No recent demand, Healthy), suggested order qty | product, warehouse, `snapshot_date_key` |
+| `kpi_fill_rate` | product x warehouse x month: quantity and order fill rate | product, warehouse, `month_date_key` |
+| `kpi_supplier_scorecard` | supplier: on-time rate, delay, open orders, exception POs | supplier |
+| `kpi_po_exception_reasons` | reason x supplier x warehouse: the root-cause list | supplier, warehouse |
+
+**`rpt_demand`: Demand vs Actual vs Budget (S&OP)** (Planning, Sales, Finance)
+
+| View | Grain | Joins on |
+|---|---|---|
+| `dim_date`, `dim_product`, `dim_customer`, `dim_budget_version` | one row per member (`is_current` marks the budget in use) | `date_key`, `product_key`, `customer_key`, `budget_version_key` |
+| `fact_demand_forecast` | customer x product x month | customer, product, `month_date_key` |
+| `fact_sales_actual` | sales order line (no Draft or Cancelled) | customer, product, `order_date_key` and `month_date_key` |
+| `fact_sales_budget` | budget version x customer x product x month | customer, product, version, `month_date_key` |
+| `kpi_demand_actual_budget` | customer x product x month: forecast, actual, budget in qty and $, attainment, absolute forecast error (closed months) | customer, product, `month_date_key` |
+| `kpi_forecast_accuracy` | product x closed month: WAPE, forecast accuracy %, bias % | product, `month_date_key` |
+
+Days of supply uses the average daily ordered quantity in the 28 days up to the count. Lead time is the standard lead time of the supplier on the product's latest PO (14 days if there is none), and the reorder threshold is lead time plus 7 safety days.
 
 ## Assumptions and limitations (from the source data)
 
