@@ -24,7 +24,7 @@ Unlike the ERP, every CRM table has a trigger-maintained `updated_at` and never 
 - Watermark: `etl.etl_watermarks`, `watermark_type = 'source_updated_at'`, one row per CRM table. It moves only when the table's staging transaction commits.
 - Overlap: the lookback re-reads the last few minutes; the row hash makes those re-reads change nothing. It also covers a CRM transaction that commits a little after its `updated_at` was stamped.
 - Composite keys: `demand_forecasts` (account, sku, month) and `sales_budgets` (version, account, sku, month).
-- Login: `crm_etl_reader`, read-only, set up by the CRM app (`crm-app/db/002_crm_roles.sql`).
+- Login: `crm_etl_reader`, read-only, set up by the CRM app (`db/002_crm_roles.sql` in [UniFirst_CRM](https://github.com/dharanig977/UniFirst_CRM)).
 - Optional: if `CRM_DATABASE_URL` is not set, runs load the ERP only. If the CRM is down, the ERP still loads and the run is `partial_success`; the next run catches up from the watermark.
 
 ## Warehouse additions (`sql/004_crm_source.sql`)

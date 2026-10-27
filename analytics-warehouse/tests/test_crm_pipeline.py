@@ -1,7 +1,7 @@
 """End-to-end tests for the CRM source (demand, actuals, budget) on a local PostgreSQL.
 
 The ERP and warehouse come from the env fixture (conftest.py), plus a third database etl_test_crm built from
-tests/crm_schema.sql (a copy of crm-app/db/001_crm_schema.sql).
+tests/crm_schema.sql (a copy of db/001_crm_schema.sql in the UniFirst_CRM repo).
 """
 import dataclasses
 
