@@ -23,17 +23,27 @@ def _int(name: str, default: int) -> int:
         raise SystemExit(f"{name} must be a whole number, got {value!r}")
 
 
+def _check_url(name: str, value: str) -> str:
+    """Stop before connecting if a postgresql:// URL has an unescaped @ in the
+    password: libpq would read the rest as the host name and print it in the
+    error, which puts part of the password in the (possibly public) job log."""
+    if value.startswith(("postgres://", "postgresql://")) and value.split("/", 3)[2].count("@") > 1:
+        raise SystemExit(f"{name}: the password contains '@', which ends the password early in a "
+                         f"connection string. Write it as %40, or use a password without '@'.")
+    return value
+
+
 def _url(name: str) -> str:
     value = os.environ.get(name, "").strip()
     if not value or value == "replace_me":
         raise SystemExit(f"{name} is not set. Copy .env.example to .env and fill it in, "
                          f"or set it as a secret in your scheduler.")
-    return value
+    return _check_url(name, value)
 
 
 def _optional_url(name: str) -> str | None:
     value = os.environ.get(name, "").strip()
-    return None if not value or value == "replace_me" else value
+    return None if not value or value == "replace_me" else _check_url(name, value)
 
 
 def _crm_url() -> str | None:
