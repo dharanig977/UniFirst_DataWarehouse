@@ -2,6 +2,8 @@
 
 **Portfolio demonstration on synthetic data.** It is not a UniFirst production system, and it does not connect to Microsoft Dynamics.
 
+**Live ETL console:** https://uni-first-data-warehouse.vercel.app (sign in with an ERP account).
+
 ```
 Source 1  SCM  Supabase PostgreSQL (ERP)   \
                                              > Python ETL (scheduled) -> Neon warehouse: staging -> dw -> analytics (calculation views)
