@@ -46,7 +46,7 @@ tests/api.test.ts         API tests against a local warehouse
 
 ## Setup (browser only, about 10 minutes)
 
-1. **Warehouse login.** The Neon warehouse already has `sql/006` and `sql/007`. In Neon → **SQL Editor**, turn the login on with a new password (letters and numbers only, about 32 characters, kept in your password manager):
+1. **Warehouse login.** The Neon warehouse already has `sql/006` and `sql/007`. In Neon → **SQL Editor**, turn the login on with a new password (about 40 characters of letters, numbers, `-` and `_`, kept in your password manager; Neon rejects passwords without some symbols, and `- _` are the symbols that are safe in connection strings):
    `alter role etl_console_reader with login password 'PASTE-HERE';`
 2. **Connection string.** Neon → **Connect** (connection pooling off), copy the host, and build:
    `postgresql://etl_console_reader:<password>@<neon-host>/neondb?sslmode=require`
