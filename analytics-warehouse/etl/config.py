@@ -1,6 +1,9 @@
 """Settings, read from environment variables (or a local .env file that is never committed)."""
 import os
+import tempfile
 from dataclasses import dataclass
+
+import psycopg
 
 try:  # python-dotenv is optional; hosted schedulers set real environment variables
     from dotenv import load_dotenv
@@ -33,6 +36,18 @@ def _optional_url(name: str) -> str | None:
     return None if not value or value == "replace_me" else value
 
 
+def _crm_url() -> str | None:
+    """CRM connection. With CRM_DATABASE_CA (the provider's CA certificate, PEM text)
+    the server certificate and host name are verified (sslmode=verify-full)."""
+    url = _optional_url("CRM_DATABASE_URL")
+    ca = os.environ.get("CRM_DATABASE_CA", "").strip()
+    if not url or not ca:
+        return url
+    with tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as f:
+        f.write(ca + "\n")
+    return psycopg.conninfo.make_conninfo(url, sslmode="verify-full", sslrootcert=f.name)
+
+
 @dataclass(frozen=True)
 class Settings:
     source_url: str
@@ -57,5 +72,5 @@ def load_settings() -> Settings:
         max_retries=max(1, _int("ETL_MAX_RETRIES", 3)),
         statement_timeout_s=max(5, _int("ETL_STATEMENT_TIMEOUT_SECONDS", 45)),
         max_delete_fraction_pct=min(100, max(0, _int("ETL_MAX_DELETE_PERCENT", 20))),
-        crm_url=_optional_url("CRM_DATABASE_URL"),
+        crm_url=_crm_url(),
     )

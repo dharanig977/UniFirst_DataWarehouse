@@ -16,7 +16,9 @@ services:
       - key: WAREHOUSE_DATABASE_URL
         sync: false
       - key: CRM_DATABASE_URL
-        sync: false         # optional; without it only the ERP is loaded
+        sync: false         # optional; crm_etl_reader on Aiven. Without it only the ERP is loaded
+      - key: CRM_DATABASE_CA
+        sync: false         # Aiven CA certificate (PEM text), turns on full certificate checks
       - key: ETL_BATCH_SIZE
         value: "1000"
       - key: ETL_LOOKBACK_MINUTES
