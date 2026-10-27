@@ -1,5 +1,5 @@
-# Runs the warehouse ETL on GitHub's machines. Use it for the first manual
-# runs (Actions tab -> Warehouse ETL -> Run workflow). Credentials come from
+# Runs the warehouse ETL on GitHub's machines: every 15 minutes on a schedule,
+# or by hand (Actions tab -> Warehouse ETL -> Run workflow). Credentials come from
 # repository secrets SOURCE_DATABASE_URL and WAREHOUSE_DATABASE_URL, plus (optional)
 # CRM_ETL_PASSWORD and CRM_DATABASE_CA for the read-only crm_etl_reader login on
 # the Aiven CRM. Without CRM_ETL_PASSWORD the run loads the ERP only.
@@ -16,11 +16,13 @@ on:
         type: choice
         options: [setup, check, run]
         default: check
-  # Optional free fallback scheduler. GitHub's minimum is every 5 minutes and
-  # runs are often delayed, so it cannot meet a 1-minute target. Leave it off
-  # while Render runs the schedule, or two schedulers will take turns (safe, but wasteful).
-  # schedule:
-  #   - cron: "*/5 * * * *"
+  # Free scheduler: a heartbeat every 15 minutes (UTC). Each heartbeat runs one
+  # batch only if the console schedule (etl.etl_schedule) says one is due, so
+  # pausing or changing the interval in the console still works. GitHub may
+  # start a scheduled run a few minutes late. Use this or the Render cron job in
+  # render.yaml, not both (two schedulers are safe but wasteful).
+  schedule:
+    - cron: "*/15 * * * *"
 
 concurrency:
   group: warehouse-etl
