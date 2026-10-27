@@ -4,7 +4,7 @@ A web console to monitor, schedule and troubleshoot the data pipeline:
 
 ```
 Source 1  SCM  (ERP, Supabase PostgreSQL, schema raw)  6 tables  \
-                                                                   > Python ETL (every minute) -> Cloud data warehouse -> Power BI
+                                                                   > Python ETL (scheduled) -> Cloud data warehouse (Neon) -> Power BI
 Source 2  CRM  (Aiven PostgreSQL, schema crm)          6 tables  /     staging -> dw (star schema) -> analytics (calculation views)
 ```
 
@@ -20,7 +20,7 @@ Source 2  CRM  (Aiven PostgreSQL, schema crm)          6 tables  /     staging -
 
 It refreshes every 30 seconds.
 
-**Scheduling.** The scheduler (Render cron) starts the ETL every minute as a heartbeat. The ETL reads `etl.etl_schedule` first and only runs a batch when the schedule is on and the interval has passed, or when someone pressed **Run now** (which works even while paused). Changing the schedule needs the `operator` role; viewers can see everything but change nothing.
+**Scheduling.** The scheduler (Render cron) starts the ETL every 15 minutes as a heartbeat. The ETL reads `etl.etl_schedule` first and only runs a batch when the schedule is on and the interval has passed, or when someone pressed **Run now** (which works even while paused). Changing the schedule needs the `operator` role; viewers can see everything but change nothing.
 
 ## How it is put together
 

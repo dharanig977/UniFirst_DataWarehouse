@@ -131,7 +131,7 @@ function Pipeline({ data, onOpen }: { data: ConsoleData; onOpen: (t: Tab) => voi
         ))}
       </div>
       <div className="flow-arrow" aria-hidden>
-        <span className="lines"><span>Python ETL</span><span>every minute</span><span>read-only</span></span>
+        <span className="lines"><span>Python ETL</span><span>on schedule</span><span>read-only</span></span>
         <span className="glyph">→</span>
       </div>
       <div className="flow-col wide">
@@ -418,13 +418,13 @@ function ScheduleCard({ data, onChanged }: { data: ConsoleData; onChanged: () =>
       <h2>Batch schedule</h2>
       <div className="schedule-grid">
         <div className="kv"><span>Status</span><strong>{scheduleText(s)}</strong></div>
-        <div className="kv"><span>Next run</span><strong>{s.run_requested_at ? 'within a minute (Run now)' : s.next_run_due_at ? ago(s.next_run_due_at, data.generatedAt).replace(' ago', '').replace('just now', 'within a minute') : '–'}</strong></div>
+        <div className="kv"><span>Next run</span><strong>{s.run_requested_at ? 'next check-in (Run now)' : s.next_run_due_at ? ago(s.next_run_due_at, data.generatedAt).replace(' ago', '').replace('just now', 'next check-in') : '–'}</strong></div>
         <div className="kv"><span>Last run started</span><strong>{ago(s.last_run_started_at, data.generatedAt)}</strong></div>
         <div className="kv"><span>Scheduler (Render)</span><strong className={s.scheduler_alive ? 'ok-text' : 'warn-text'}>{schedulerText(s, data.generatedAt)}</strong></div>
         <div className="kv"><span>Last changed</span><strong>{ago(s.updated_at, data.generatedAt)} by {s.updated_by}</strong></div>
       </div>
       {s.run_requested_at && (
-        <p className="notice">Run requested by {s.run_requested_by} {ago(s.run_requested_at, data.generatedAt)}. It starts at the scheduler's next check-in (within a minute).</p>
+        <p className="notice">Run requested by {s.run_requested_by} {ago(s.run_requested_at, data.generatedAt)}. It starts at the scheduler's next check-in (every 15 minutes).</p>
       )}
       {data.canOperate ? (
         <div className="schedule-actions">
@@ -442,7 +442,7 @@ function ScheduleCard({ data, onChanged }: { data: ConsoleData; onChanged: () =>
           {s.run_requested_at ? (
             <button disabled={busy} onClick={() => void act(cancelRun, 'Run request cancelled.')}>Cancel Run now</button>
           ) : (
-            <button className="primary" disabled={busy} onClick={() => void act(requestRun, 'Run requested. It starts within a minute.')}>Run now</button>
+            <button className="primary" disabled={busy} onClick={() => void act(requestRun, 'Run requested. It starts at the next check-in.')}>Run now</button>
           )}
         </div>
       ) : (
@@ -450,7 +450,7 @@ function ScheduleCard({ data, onChanged }: { data: ConsoleData; onChanged: () =>
       )}
       {msg && <p className={msg.kind === 'ok' ? 'notice' : 'notice error'}>{msg.text}</p>}
       <p className="muted small">
-        The scheduler (Render cron) checks in every minute and the ETL runs only when this schedule says it is due, so changes here take
+        The scheduler (Render cron) checks in every 15 minutes and the ETL runs only when this schedule says it is due, so changes here take
         effect at the next check-in. Run now works even while the schedule is paused.
       </p>
     </section>
@@ -467,12 +467,12 @@ function Troubleshoot({ data }: { data: ConsoleData }) {
       <section className="card">
         <h2>Health checks</h2>
         <ul className="checks">
-          <Check ok={!!s?.scheduler_alive} text={s?.scheduler_alive ? 'The scheduler is checking in.' : 'The scheduler has not checked in for 5 minutes. Check the Render cron job (or start a run from GitHub Actions).'} />
+          <Check ok={!!s?.scheduler_alive} text={s?.scheduler_alive ? 'The scheduler is checking in.' : 'The scheduler has not checked in for 20 minutes. Check the Render cron job (or start a run from GitHub Actions).'} />
           <Check ok={!!s?.is_enabled} text={s?.is_enabled ? 'The schedule is on.' : 'The schedule is paused. Turn it on under Schedule & runs.'} />
           <Check ok={!data.sources.some((t) => t.load_status === 'Stale' || t.load_status === 'Never loaded')} text={
             data.sources.some((t) => t.load_status === 'Never loaded') ? 'Some source tables were never loaded. Run the ETL once.'
-              : data.sources.some((t) => t.load_status === 'Stale') ? 'Some source tables have not loaded for over 15 minutes.'
-                : 'Every source table loaded in the last 15 minutes.'} />
+              : data.sources.some((t) => t.load_status === 'Stale') ? 'Some source tables have not loaded for over 90 minutes.'
+                : 'Every source table loaded in the last 90 minutes.'} />
           <Check ok={!problems.length} text={problems.length ? `${problems.length} of the last ${data.runs.length} runs failed or partly failed (below).` : 'No failed runs recently.'} />
           <Check ok={!open.length} text={open.length ? `${open.length} source rows are held back by validation (below).` : 'No rejected rows.'} />
         </ul>

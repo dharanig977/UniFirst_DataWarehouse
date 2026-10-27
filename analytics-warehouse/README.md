@@ -33,7 +33,7 @@ tests/                            23 tests (unit + end-to-end on a throwaway Pos
 docs/setup_guide.md               step-by-step setup, browser only
 docs/data_model.md                grains, keys, measures, ER diagram, limitations
 docs/etl_design.md                extraction strategy, validation rules, recovery, rerun
-docs/powerbi_guide.md             connecting Power BI, DAX measures, report pages
+docs/neon_setup.md                the warehouse on Neon: create, build (one click), logins, report views
 docs/crm_source.md                the CRM source: incremental extract, demand/actual/budget model, setup, DAX
 ../render.yaml                    every-minute schedule on Render
 ../.github/workflows/             manual ETL button + tests on every pull request

@@ -56,7 +56,7 @@ select t.table_no, t.source_no, t.source_label, t.source_system, t.source_platfo
        w.latest_source_event_at,
        round(extract(epoch from now() - w.last_successful_load_at) / 60.0, 1) as minutes_since_last_load,
        case when w.last_successful_load_at is null then 'Never loaded'
-            when now() - w.last_successful_load_at > interval '15 minutes' then 'Stale'
+            when now() - w.last_successful_load_at > interval '90 minutes' then 'Stale'
             when coalesce(r.open_rejections, 0) > 0 then 'Loaded with rejections'
             else 'Up to date' end                            as load_status
 from t

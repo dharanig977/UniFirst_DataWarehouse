@@ -2,8 +2,9 @@
 -- 007: batch schedule controlled from the ETL console, plus troubleshooting views.
 -- Run after 006. Safe to rerun.
 --
--- How scheduling works: the scheduler (Render cron) starts the ETL every minute
--- as a heartbeat. The ETL first reads etl.etl_schedule and only runs a batch if
+-- How scheduling works: the scheduler (Render cron) starts the ETL every 15
+-- minutes as a heartbeat (often enough for Run now, rare enough to let a Neon
+-- warehouse sleep in between). The ETL first reads etl.etl_schedule and only runs a batch if
 -- the schedule is enabled and the interval has passed, or if someone pressed
 -- "Run now" in the console. So the console changes the schedule without any
 -- access to Render or GitHub.
@@ -20,7 +21,7 @@ create table if not exists etl.etl_schedule (
   updated_by         text        not null default 'setup',
   constraint etl_schedule_interval_chk check (interval_minutes in (1, 5, 10, 15, 30, 60, 120, 240, 720, 1440))
 );
-insert into etl.etl_schedule (pipeline_name) values ('supply_chain_etl') on conflict do nothing;
+insert into etl.etl_schedule (pipeline_name, interval_minutes) values ('supply_chain_etl', 15) on conflict do nothing;
 
 -- Who did what in the console (schedule changes, Run now). Never edited.
 create table if not exists etl.etl_console_actions (
@@ -87,7 +88,7 @@ with last_run as (
 select s.pipeline_name, s.is_enabled, s.interval_minutes, s.run_requested_at, s.run_requested_by,
        s.last_heartbeat_at,
        round(extract(epoch from now() - s.last_heartbeat_at) / 60.0, 1) as minutes_since_heartbeat,
-       (s.last_heartbeat_at is not null and now() - s.last_heartbeat_at < interval '5 minutes') as scheduler_alive,
+       (s.last_heartbeat_at is not null and now() - s.last_heartbeat_at < interval '20 minutes') as scheduler_alive,
        l.started_at as last_run_started_at,
        case when s.run_requested_at is not null then now()
             when not s.is_enabled then null

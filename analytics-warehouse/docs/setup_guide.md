@@ -4,6 +4,8 @@ Everything below happens in a web browser: Supabase, GitHub and Render. You neve
 
 Do the stages in order, and run the check at the end of each stage before moving on.
 
+> **2026-10-27: the warehouse moved to its own platform, Neon.** Follow `neon_setup.md` for the warehouse (it replaces Stage 1 and the warehouse half of Stages 2 and 3). The source logins (Stage 2, `etl_reader`), the first runs (Stages 4 and 5) and Render (Stage 6) still apply. The Supabase warehouse project below is the earlier setup.
+
 > **What this is.** A second Supabase project is a cloud-hosted PostgreSQL database used as a data warehouse for a portfolio project. It is *not* the same as a dedicated warehouse product like Snowflake or Microsoft Fabric Warehouse (columnar storage, separate compute, petabyte scale). The modelling, ETL and BI patterns are the same ones you would use there.
 
 ---
@@ -140,6 +142,6 @@ The job *starts* about once a minute. That's not a promise that Power BI shows d
 
 ---
 
-## Stage 7: Power BI
+## Stage 7: reporting
 
-See `powerbi_guide.md`.
+The report views and the read-only `powerbi_reader` login are listed at the end of `neon_setup.md`.
