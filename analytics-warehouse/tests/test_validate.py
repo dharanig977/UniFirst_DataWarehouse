@@ -58,3 +58,14 @@ def test_hash_changes_only_when_values_change():
     b, _ = validate(PURCHASE_ORDERS, [po(status=" open ")], TODAY)   # same after cleaning
     c, _ = validate(PURCHASE_ORDERS, [po(order_qty=11)], TODAY)
     assert a[0]["_row_hash"] == b[0]["_row_hash"] != c[0]["_row_hash"]
+
+
+def test_url_with_unescaped_at_in_password_is_refused_without_echoing_it():
+    import pytest
+    from etl.config import _check_url
+    with pytest.raises(SystemExit) as e:
+        _check_url("WAREHOUSE_DATABASE_URL", "postgresql://etl_loader:secret@1234@host.example/neondb")
+    assert "1234" not in str(e.value) and "%40" in str(e.value)
+    ok = "postgresql://etl_loader:secret%401234@host.example/neondb?sslmode=require"
+    assert _check_url("WAREHOUSE_DATABASE_URL", ok) == ok
+    assert _check_url("CRM_DATABASE_URL", "host=h user=u password=a@b") == "host=h user=u password=a@b"
