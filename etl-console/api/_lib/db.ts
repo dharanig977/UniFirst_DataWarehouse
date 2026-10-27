@@ -2,7 +2,7 @@
 // SELECT the analytics views and call the three console.* functions; reads
 // also run in a READ ONLY transaction.
 import pg from 'pg'
-import { ConfigError, type ServerConfig } from './config.js'
+import type { ServerConfig } from './config.js'
 
 // Timestamps arrive as Dates (sent to the browser as ISO text); NUMERIC and BIGINT become numbers (counts and minutes).
 pg.types.setTypeParser(1082, (v) => v)
@@ -16,8 +16,9 @@ let pool: pg.Pool | null = null
 export function sslOptions(url: string, ca: string | null): pg.PoolConfig['ssl'] {
   const host = new URL(url).hostname
   if (host === 'localhost' || host === '127.0.0.1') return false
-  if (!ca) throw new ConfigError('Server setup: WAREHOUSE_DATABASE_CA is not set. Paste the certificate from the warehouse project (Database settings > SSL Configuration > Download certificate) into Vercel.')
-  return { ca, rejectUnauthorized: true }
+  // Neon's certificates come from a public CA, so Node's built-in list verifies them.
+  // WAREHOUSE_DATABASE_CA is only for a host with a private CA (Supabase, Aiven).
+  return ca ? { ca, rejectUnauthorized: true } : { rejectUnauthorized: true }
 }
 
 export function getPool(cfg: ServerConfig): pg.Pool {

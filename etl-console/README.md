@@ -46,22 +46,20 @@ tests/api.test.ts         API tests against a local warehouse
 
 ## Setup (browser only, about 10 minutes)
 
-1. **Warehouse login.** The warehouse needs `sql/006_etl_console_views.sql` and `sql/007_etl_schedule.sql`. In the warehouse project → SQL Editor, turn the login on with a new password (letters and numbers only, about 32 characters, kept in your password manager):
+1. **Warehouse login.** The Neon warehouse already has `sql/006` and `sql/007`. In Neon → **SQL Editor**, turn the login on with a new password (letters and numbers only, about 32 characters, kept in your password manager):
    `alter role etl_console_reader with login password 'PASTE-HERE';`
-2. **Connection string.** Warehouse project → **Connect** → **Session pooler**. Replace `postgres.` at the start of the user with `etl_console_reader.` and put the password in:
-   `postgresql://etl_console_reader.<warehouse-ref>:<password>@<pooler-host>:5432/postgres`
-3. **Certificate.** Warehouse project → **Database settings** → **SSL Configuration** → **Download certificate**. Open the file in a text editor and copy all of it.
-4. **Vercel.** Add New → Project → import this repository again, set **Root Directory** to `etl-console`, and add these environment variables:
+2. **Connection string.** Neon → **Connect** (connection pooling off), copy the host, and build:
+   `postgresql://etl_console_reader:<password>@<neon-host>/neondb?sslmode=require`
+3. **Vercel.** Add New → Project → import **UniFirst_DataWarehouse**, set **Root Directory** to `etl-console`, and add these environment variables:
 
    | Name | Value |
    |---|---|
    | `VITE_SUPABASE_URL` | the ERP project URL (same as in the CRM app) |
    | `VITE_SUPABASE_PUBLISHABLE_KEY` | the ERP publishable key (same as in the CRM app) |
    | `WAREHOUSE_CONSOLE_URL` | the string from step 2 |
-   | `WAREHOUSE_DATABASE_CA` | the certificate text from step 3 |
 
-   Then **Deploy**.
-5. Open the site and sign in with your ERP account. Before the first ETL run every table shows **Never loaded**; after it, rows and times fill in.
+   Then **Deploy**. No certificate is needed: Neon's certificate is checked against the built-in public list, with full verification.
+4. Open the site and sign in with your ERP account. Before the first ETL run every table shows **Never loaded**; after it, rows and times fill in. To change the schedule or press **Run now**, your account needs the `operator` role.
 
 ## Local development and tests
 

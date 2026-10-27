@@ -14,6 +14,8 @@ Three platforms, one per job. Everything is done in the browser, and **passwords
 
 ---
 
+> **Status 2026-10-27:** steps 1 to 3 are done. The project is `supply-chain-warehouse` (`tiny-band-79271165`, AWS US East Ohio, Postgres 18), and sql/001 to 007 are applied and checked against the tested build. Start at step 4. The `WAREHOUSE_ADMIN_URL` secret is not needed.
+
 ## Step 1: create the Neon project (you, about 3 minutes)
 
 1. Go to [neon.com](https://neon.com) → **Sign up** → **Continue with GitHub**. No payment card is needed.
