@@ -24,6 +24,8 @@ sql/002_analytics_views.sql       7 Power BI views + a receipts-per-PO helper
 sql/003_warehouse_roles.sql       etl_loader and powerbi_reader logins (no passwords in the file)
 sql/004_crm_source.sql            CRM staging tables, dim_customer, dim_budget_version, demand + budget facts
 sql/005_demand_actual_budget_views.sql   Demand vs Actual vs Budget view, CRM data-quality checks
+sql/006_etl_console_views.sql     views behind the ETL console (../etl-console) and its read-only login
+sql/007_etl_schedule.sql         batch schedule set from the console (pause, interval, Run now) and troubleshooting views
 sql/source_etl_reader_role.sql    read-only etl_reader login for the SOURCE project
 sql/validation_queries.sql        checks to run after each stage
 etl/                              the pipeline: extract -> validate -> load staging -> load dw -> log
@@ -31,7 +33,7 @@ tests/                            23 tests (unit + end-to-end on a throwaway Pos
 docs/setup_guide.md               step-by-step setup, browser only
 docs/data_model.md                grains, keys, measures, ER diagram, limitations
 docs/etl_design.md                extraction strategy, validation rules, recovery, rerun
-docs/powerbi_guide.md             connecting Power BI, DAX measures, report pages
+docs/neon_setup.md                the warehouse on Neon: create, build (one click), logins, report views
 docs/crm_source.md                the CRM source: incremental extract, demand/actual/budget model, setup, DAX
 ../render.yaml                    every-minute schedule on Render
 ../.github/workflows/             manual ETL button + tests on every pull request

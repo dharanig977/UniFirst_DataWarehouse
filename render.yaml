@@ -6,7 +6,8 @@ services:
     runtime: python
     plan: starter
     region: ohio            # same region as both Supabase projects (us-east-2)
-    schedule: "* * * * *"   # every minute, UTC. Render never runs two at once.
+    schedule: "*/15 * * * *" # heartbeat every 15 min, UTC; the console schedule decides if a batch runs.
+                              # Not more often: each check-in wakes the Neon warehouse. Render never runs two at once.
     rootDir: analytics-warehouse
     buildCommand: pip install -r requirements.txt
     startCommand: python -m etl.run --triggered-by schedule

@@ -6,6 +6,9 @@
 
 Sources: the ERP (always) and the CRM (only when CRM_DATABASE_URL is set).
 
+With --triggered-by schedule the run first checks the schedule in etl.etl_schedule
+(set from the ETL console): paused, not due yet, or a pending "Run now".
+
 Exit code 0 = success, partial_success or skipped (another run was busy).
 Exit code 1 = failed, so the scheduler shows the run as failed.
 """
@@ -14,8 +17,11 @@ import datetime as dt
 import json
 import logging
 import sys
+import time
 import traceback
 from dataclasses import dataclass
+
+import psycopg
 
 from . import db
 from .config import load_settings
@@ -90,12 +96,48 @@ def _incremental_since(lock_conn, settings, src: Source) -> dict:
     return {r["table_name"]: r["since"] for r in rows if r["since"] is not None}
 
 
+def _schedule_says_run(lock_conn, settings) -> tuple[bool, bool]:
+    """For scheduler starts only: (run now?, was it a console "Run now"?).
+
+    The scheduler starts the ETL every minute as a heartbeat; the schedule in
+    etl.etl_schedule (set from the ETL console) decides whether this start runs
+    a batch. Without that table (older warehouse) every start runs.
+    """
+    try:
+        row = lock_conn.execute("""
+            update etl.etl_schedule set last_heartbeat_at = now() where pipeline_name = %(p)s
+            returning is_enabled, interval_minutes, run_requested_at is not null as requested,
+                      (select max(started_at) from etl.etl_run_log
+                       where pipeline_name = %(p)s and status <> 'skipped') as last_start,
+                      now() as now""", {"p": settings.pipeline_name}).fetchone()
+    except psycopg.errors.UndefinedTable:
+        return True, False
+    if row is None:
+        return True, False
+    if row["requested"]:
+        return True, True
+    if not row["is_enabled"]:
+        log.info("Schedule is paused in the ETL console. Nothing to do.")
+        return False, False
+    # 20 s slack so a 1-minute cron that starts a little early still counts as due.
+    due = row["last_start"] is None or (row["now"] - row["last_start"]).total_seconds() >= row["interval_minutes"] * 60 - 20
+    if not due:
+        log.info("Not due yet (runs every %d min). Nothing to do.", row["interval_minutes"])
+    return due, False
+
+
 def run(settings, triggered_by: str) -> int:
     srcs = sources(settings)
     systems = ",".join(s.system for s in srcs)
     lock_conn = db.with_retries("connect to warehouse", settings.max_retries, db.connect_warehouse,
                                 settings.warehouse_url, settings.statement_timeout_s, autocommit=True)
     with lock_conn:
+        if triggered_by == "schedule":
+            go, requested = _schedule_says_run(lock_conn, settings)
+            if not go:
+                return 0
+            if requested:
+                triggered_by = "console"
         # Only one run at a time. The lock lives as long as this connection, so a
         # crashed run releases it automatically.
         if not lock_conn.execute(LOCK_SQL, (settings.pipeline_name,)).fetchone()["got"]:
@@ -113,6 +155,10 @@ def run(settings, triggered_by: str) -> int:
             where pipeline_name = %s and status = 'running' returning run_id""", (settings.pipeline_name,)).fetchall()
         if stale:
             log.warning("Marked %d interrupted run(s) as failed: %s", len(stale), [r["run_id"] for r in stale])
+
+        if triggered_by == "console":  # the request is being served now
+            lock_conn.execute("update etl.etl_schedule set run_requested_at = null, run_requested_by = null "
+                              "where pipeline_name = %s", (settings.pipeline_name,))
 
         row = lock_conn.execute("""
             insert into etl.etl_run_log (pipeline_name, source_system, triggered_by)
@@ -143,6 +189,7 @@ def run(settings, triggered_by: str) -> int:
                 def _extract(src=src, since=since):
                     with db.connect_source(src.url, settings.statement_timeout_s) as conn:
                         return extract_all(conn, src.tables, settings.batch_size, since)
+                started = time.monotonic()
                 try:
                     extracted = db.with_retries(f"extract {src.label}", settings.max_retries, _extract)
                 except Exception as exc:  # the other source can still load
@@ -150,7 +197,10 @@ def run(settings, triggered_by: str) -> int:
                     steps.append({"step": "extract", "source": src.system, "error": str(exc)})
                     log.error("extract %s failed: %s", src.label, exc)
                     continue
-                totals["extracted"] += sum(len(rows) for rows in extracted.values())
+                n_read = sum(len(rows) for rows in extracted.values())
+                totals["extracted"] += n_read
+                steps.append({"step": "extract", "source": src.system, "extracted": n_read,
+                              "seconds": round(time.monotonic() - started, 2)})
 
                 # 2-4. Validate, transform and load staging, one transaction per table
                 for table in src.tables:
@@ -162,11 +212,12 @@ def run(settings, triggered_by: str) -> int:
                     if table.mode == "incremental":
                         wm = max((r[table.updated_column] for r in raw_rows
                                   if r.get(table.updated_column) is not None), default=None)
+                    started = time.monotonic()
                     try:
                         stats = db.with_retries(f"staging {table.source_name}", settings.max_retries, _merge,
                                                 table, accepted, rejected, len(raw_rows), src.system, wm)
                         staged_ok += 1
-                        steps.append({"step": "staging", **stats})
+                        steps.append({"step": "staging", **stats, "seconds": round(time.monotonic() - started, 2)})
                         totals["deleted"] += stats["deleted"]
                         totals["rejected"] += stats["rejected"]
                     except Exception as exc:  # keep going: other tables can still load
@@ -209,7 +260,7 @@ def run(settings, triggered_by: str) -> int:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Supply-chain ETL: ERP + CRM -> warehouse")
     parser.add_argument("--check", action="store_true", help="test connections only, change nothing")
-    parser.add_argument("--triggered-by", default="manual", choices=["manual", "schedule", "test"])
+    parser.add_argument("--triggered-by", default="manual", choices=["manual", "schedule", "console", "test"])
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", stream=sys.stdout)
     settings = load_settings()
