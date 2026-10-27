@@ -1,19 +1,19 @@
 # Supply-chain analytics warehouse
 
-An analytics layer for the Supply Chain ERP app in this repo: a second Supabase PostgreSQL database used as a data warehouse, fed by a Python ETL job that runs every minute from two sources (the ERP and the CRM app's database), with SQL views built for Power BI.
+A cloud data warehouse on Neon (serverless PostgreSQL), fed by a scheduled Python ETL from two sources: the Supply Chain ERP ([UniFirst_SoftwareDev_SCM](https://github.com/dharanig977/UniFirst_SoftwareDev_SCM), Supabase) and the CRM ([UniFirst_CRM](https://github.com/dharanig977/UniFirst_CRM), Aiven). SQL calculation views are ready for reporting.
 
 **Portfolio demonstration on synthetic data.** It is not a UniFirst production system, and it does not connect to Microsoft Dynamics.
 
 ```mermaid
 flowchart LR
-  A[(ERP Supabase<br/>raw.* tables)] -- read-only etl_reader --> B[Python ETL<br/>Render cron, every minute]
+  A[(ERP Supabase<br/>raw.* tables)] -- read-only etl_reader --> B[Python ETL<br/>Render cron, scheduled]
   C[(CRM Aiven PostgreSQL<br/>crm.* tables)] -- read-only crm_etl_reader --> B
   B -- etl_loader --> S
-  subgraph W [Warehouse Supabase]
+  subgraph W [Warehouse Neon]
     S[staging] --> D[dw star schema] --> V[analytics views]
     L[etl run log + watermarks]
   end
-  V -- read-only powerbi_reader --> P[Power BI Desktop]
+  V -- read-only powerbi_reader --> P[Reporting tool]
 ```
 
 ## What's here
