@@ -53,12 +53,17 @@ An ERP order with no CRM link (or whose link was deleted) sits on customer key 0
 
 ## Setup (after the ERP pipeline works)
 
-1. The CRM thread creates the CRM database and the `crm_etl_reader` login, and you set its password in the Aiven console (never in chat).
-2. Warehouse project → SQL Editor: run `sql/004_crm_source.sql`, then `sql/005_demand_actual_budget_views.sql`. Both are safe to rerun and change no existing data. If you ever rerun `002`, rerun `005` after it.
-3. Build the connection string from Aiven → service → **Overview** → Connection information:
-   `postgresql://crm_etl_reader:<password>@<host>:<port>/defaultdb?sslmode=require`
-4. Add it as `CRM_DATABASE_URL` in GitHub (Settings → Secrets → Actions) and in Render (cron job → Environment).
-5. Actions → Warehouse ETL → mode `check`: it should list the six `crm.*` tables. Then mode `run`.
+1. The CRM database is live on Aiven (host `pg-1d0d8e4f-dharanig977-fa92.a.aivencloud.com`, port `14198`, database `defaultdb`), with the read-only `crm_etl_reader` login. Its password is the GitHub secret `CRM_ETL_PASSWORD`, and Aiven's CA certificate is the secret `CRM_DATABASE_CA`.
+2. The warehouse already has `sql/004_crm_source.sql` and `sql/005_demand_actual_budget_views.sql` applied. Both are safe to rerun. If you ever rerun `002`, rerun `005` after it.
+3. **GitHub:** nothing to add. The Warehouse ETL workflow builds the CRM connection from `CRM_ETL_PASSWORD` and verifies the server certificate with `CRM_DATABASE_CA`.
+4. **Render** (cron job → Environment), two values:
+   - `CRM_DATABASE_URL` = `postgresql://crm_etl_reader:<crm_etl_reader password>@pg-1d0d8e4f-dharanig977-fa92.a.aivencloud.com:14198/defaultdb?sslmode=require`
+   - `CRM_DATABASE_CA` = the CA certificate text (Aiven console → service → Overview → CA certificate → copy).
+
+   **Don't mix it up with the CRM app's own `CRM_DATABASE_URL` on Vercel.** That one uses the `crm_app` login, which can write. The ETL must always use `crm_etl_reader`.
+5. Actions → Warehouse ETL → mode `check`: it should show `crm connected as crm_etl_reader, read-only session: on` and the six `crm.*` tables. Then mode `run`.
+
+`crm.orders` stays empty until the CRM app is deployed and someone clicks **Auto-link all**. Until then every actual sits on the Unknown customer, and the data-quality view says so.
 
 ✅ **Check:** `sum(actual_qty)` in `vw_demand_actual_budget` equals the ERP's non-Draft, non-Cancelled sales order quantity, and `sum(demand_qty)` / `sum(budget_qty)` equal the CRM's not-deleted forecast and current-budget totals.
 

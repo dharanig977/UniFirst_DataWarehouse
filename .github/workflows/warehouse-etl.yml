@@ -1,7 +1,8 @@
 # Runs the warehouse ETL on GitHub's machines. Use it for the first manual
 # runs (Actions tab -> Warehouse ETL -> Run workflow). Credentials come from
-# repository secrets SOURCE_DATABASE_URL, WAREHOUSE_DATABASE_URL and (optional)
-# CRM_DATABASE_URL.
+# repository secrets SOURCE_DATABASE_URL and WAREHOUSE_DATABASE_URL, plus (optional)
+# CRM_ETL_PASSWORD and CRM_DATABASE_CA for the read-only crm_etl_reader login on
+# the Aiven CRM. Without CRM_ETL_PASSWORD the run loads the ERP only.
 name: Warehouse ETL
 
 on:
@@ -35,7 +36,9 @@ jobs:
     env:
       SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_URL }}
       WAREHOUSE_DATABASE_URL: ${{ secrets.WAREHOUSE_DATABASE_URL }}
-      CRM_DATABASE_URL: ${{ secrets.CRM_DATABASE_URL }}
+      # Aiven CRM, read-only login. Host and port are not secret; the password is.
+      CRM_DATABASE_URL: ${{ secrets.CRM_ETL_PASSWORD != '' && format('host=pg-1d0d8e4f-dharanig977-fa92.a.aivencloud.com port=14198 dbname=defaultdb user=crm_etl_reader password={0}', secrets.CRM_ETL_PASSWORD) || '' }}
+      CRM_DATABASE_CA: ${{ secrets.CRM_DATABASE_CA }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
