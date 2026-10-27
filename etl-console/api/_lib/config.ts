@@ -4,7 +4,7 @@
 export interface ServerConfig {
   /** Postgres URL for the read-only etl_console_reader login on the warehouse. */
   databaseUrl: string
-  /** Supabase's CA certificate (PEM). Required for any non-local database. */
+  /** CA certificate (PEM) for a host with a private CA. Not needed for Neon (public CA). */
   databaseCa: string | null
   /** The ERP Supabase project, used only to check who is signed in. */
   supabaseUrl: string
