@@ -46,7 +46,7 @@ It runs `sql/001` to `sql/007` against the empty warehouse. Those scripts create
 
 ## Step 4: turn the logins on (you, in Neon's SQL Editor)
 
-Make one new password per login in your password manager, **letters and numbers only, about 32 characters**. Then, in Neon → **SQL Editor**, run one line at a time, typing the password there:
+Make one new password per login in your password manager, **about 40 characters of letters, numbers, `-` and `_`**. Neon rejects a password without some symbols ("insecure password"), and `-` and `_` are the symbols that are safe in connection strings (avoid `@ : / # ? %`). Then, in Neon → **SQL Editor**, run one line at a time, typing the password there:
 
 ```sql
 alter role etl_loader         with login password 'PASTE-HERE';  -- the ETL writes the warehouse
