@@ -61,3 +61,25 @@ export function ago(iso: string | null, nowIso: string): string {
 }
 
 export const fmt = (n: number | null | undefined) => (n == null ? '–' : n.toLocaleString('en-US'))
+
+/** A first thing to check for an ETL error, in plain words. */
+export function hintFor(error: string): string {
+  const e = error.toLowerCase()
+  if (e.includes('password authentication failed'))
+    return 'A database password or user name is wrong. Supabase users look like etl_loader.<project-ref>; check the secret in Render/GitHub.'
+  if (e.includes('would be marked deleted') || e.includes('massdeleteblocked'))
+    return 'Safety stop: far fewer rows came back than before. Check the source login can still see the table (grants/RLS). If the deletes are real, run once with ETL_MAX_DELETE_PERCENT=100.'
+  if (e.includes('certificate') || e.includes('ssl'))
+    return 'The secure connection failed. Check the CA certificate setting (CRM_DATABASE_CA) and that sslmode is set.'
+  if (e.includes('permission denied'))
+    return 'A login is missing a permission. Rerun the grants in sql/003 (warehouse) or the source role script.'
+  if (e.includes('process stopped before finishing'))
+    return 'The job was killed before it finished (for example a time limit on Render). Check the Render logs for that time; the next run recovered automatically.'
+  if (e.includes('extract crm'))
+    return 'The CRM database could not be read. The SCM data still loaded. Check that the Aiven service is running (free services power off when idle).'
+  if (e.includes('extract erp'))
+    return 'The SCM (ERP) database could not be read. Check that the Supabase project is not paused.'
+  if (e.includes('timeout') || e.includes('could not connect') || e.includes('connection'))
+    return 'A database could not be reached in time. Check that the Supabase projects and the Aiven service are running, then press Run now.'
+  return 'Open the Render (or GitHub Actions) log for this run to see the full message.'
+}

@@ -1,6 +1,6 @@
-// The one place the server connects to the warehouse. Read-only by design:
-// the login can only SELECT the analytics views, and every request runs in a
-// READ ONLY transaction as well.
+// The one place the server connects to the warehouse. The login can only
+// SELECT the analytics views and call the three console.* functions; reads
+// also run in a READ ONLY transaction.
 import pg from 'pg'
 import { ConfigError, type ServerConfig } from './config.js'
 
@@ -37,10 +37,23 @@ export function getPool(cfg: ServerConfig): pg.Pool {
 }
 
 /** Runs fn inside one READ ONLY transaction, so every view is read at the same moment. */
-export async function readOnly<T>(p: pg.Pool, fn: (q: Query) => Promise<T>): Promise<T> {
+export function readOnly<T>(p: pg.Pool, fn: (q: Query) => Promise<T>): Promise<T> {
+  return inTransaction(p, 'begin transaction isolation level repeatable read read only', fn)
+}
+
+/**
+ * Runs fn in a read-write transaction. The login's only write rights are
+ * EXECUTE on the console.* functions (schedule and Run now), so this cannot
+ * touch any table directly.
+ */
+export function writeVia<T>(p: pg.Pool, fn: (q: Query) => Promise<T>): Promise<T> {
+  return inTransaction(p, 'begin transaction read write', fn)
+}
+
+async function inTransaction<T>(p: pg.Pool, begin: string, fn: (q: Query) => Promise<T>): Promise<T> {
   const client = await p.connect()
   try {
-    await client.query('begin transaction isolation level repeatable read read only')
+    await client.query(begin)
     const result = await fn(async (sql, params = []) => (await client.query(sql, params)).rows)
     await client.query('commit')
     return result

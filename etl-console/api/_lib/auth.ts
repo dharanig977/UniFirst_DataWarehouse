@@ -1,6 +1,7 @@
 // Who is calling? The console uses the same sign-in as the ERP and CRM
 // (Supabase Auth on the ERP project). Any account with an ERP or CRM role
-// ("viewer" or "operator") may look at the console; nobody can change data here.
+// ("viewer" or "operator") may look at the console. Only operators may change
+// the schedule or press Run now. Nobody can change business data here.
 
 export interface ConsoleUser {
   id: string
@@ -42,4 +43,9 @@ export async function verifyUser(cfg: { supabaseUrl: string; supabaseKey: string
 
 export function requireRead(u: ConsoleUser) {
   if (!u.role) throw new HttpError(403, 'Your account has no role yet. An administrator must set erp_role (or etl_role) to "viewer" or "operator".')
+}
+
+export function requireOperator(u: ConsoleUser) {
+  requireRead(u)
+  if (u.role !== 'operator') throw new HttpError(403, 'Only operators can change the schedule or start a run. Your role is viewer.')
 }

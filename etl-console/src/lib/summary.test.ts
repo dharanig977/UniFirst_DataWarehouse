@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ago, groupSources, headline, latestRun } from './summary'
+import { ago, hintFor, groupSources, headline, latestRun } from './summary'
 import type { ConsoleData, EtlRun, SourceTable } from './types'
 
 const t = (no: number, name: string, rows: number, status: SourceTable['load_status'], last: string | null, rej = 0): SourceTable => ({
@@ -35,7 +35,7 @@ describe('headline', () => {
     const runs = [run(5, 'skipped', '2026-10-27T02:00:00Z'), run(4, 'failed', '2026-10-27T01:59:00Z'),
       run(3, 'success', '2026-10-27T01:58:00Z'), run(1, 'success', '2026-10-25T01:00:00Z')]
     expect(latestRun(runs)?.run_id).toBe(4)
-    const h = headline({ generatedAt: '2026-10-27T02:00:30Z', runs, sources: [], quality: [], warehouseTables: [], analyticsViews: [] } as ConsoleData)
+    const h = headline({ generatedAt: '2026-10-27T02:00:30Z', runs, sources: [], quality: [], warehouseTables: [], analyticsViews: [] } as unknown as ConsoleData)
     expect([h.lastRun?.run_id, h.runs24h, h.failed24h, h.lastSuccessAt]).toEqual([4, 2, 1, '2026-10-27T01:58:00Z'])
   })
 })
@@ -45,5 +45,14 @@ describe('ago', () => {
     const now = '2026-10-27T12:00:00Z'
     expect([ago(null, now), ago('2026-10-27T11:59:50Z', now), ago('2026-10-27T11:45:00Z', now), ago('2026-10-27T09:00:00Z', now), ago('2026-10-20T12:00:00Z', now)])
       .toEqual(['never', 'just now', '15 min ago', '3 h ago', '7 days ago'])
+  })
+})
+
+describe('hintFor', () => {
+  it('points at the likely fix for common errors', () => {
+    expect(hintFor('FATAL: password authentication failed for user "etl_loader"')).toMatch(/password/)
+    expect(hintFor('extract CRM: connection refused')).toMatch(/Aiven/)
+    expect(hintFor('MassDeleteBlocked: 90% of raw.products would be marked deleted')).toMatch(/Safety stop/)
+    expect(hintFor('something odd')).toMatch(/log/)
   })
 })

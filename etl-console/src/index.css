@@ -157,3 +157,19 @@ button.primary:hover:not(:disabled) { background: var(--accent-hover); }
   .flow-arrow .glyph, .layer-arrow { display: inline-block; transform: rotate(90deg); }
   .topbar-sub, .topbar-user { display: none; }
 }
+
+/* tables by schema, schedule, troubleshooting */
+.schema-title { margin: 4px 0 -4px; font-size: 15px; }
+.clickable { cursor: pointer; }
+.detail > td { background: var(--surface-alt); padding: 8px 12px 12px; }
+.grid.inner { font-size: 12.5px; }
+.schedule-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.kv { display: flex; flex-direction: column; gap: 2px; }
+.kv span { font-size: 12px; color: var(--muted); }
+.ok-text { color: var(--good); }
+.warn-text { color: var(--warn); }
+.schedule-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.inline { display: inline-flex; align-items: center; gap: 6px; }
+select { font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 4px; padding: 5px 8px; }
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.hint { font-size: 12.5px; max-width: 380px; }

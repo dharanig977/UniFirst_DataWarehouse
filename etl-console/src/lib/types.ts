@@ -57,8 +57,61 @@ export interface QualityCheck {
   detail: string | null
 }
 
+export interface Schedule {
+  is_enabled: boolean
+  interval_minutes: number
+  run_requested_at: string | null
+  run_requested_by: string | null
+  last_heartbeat_at: string | null
+  minutes_since_heartbeat: number | null
+  scheduler_alive: boolean
+  last_run_started_at: string | null
+  next_run_due_at: string | null
+  updated_at: string
+  updated_by: string
+}
+
+export interface RunStep {
+  run_id: number
+  step_no: number
+  step: 'extract' | 'staging' | 'dw'
+  target: string
+  rows_read: number | null
+  rows_inserted: number | null
+  rows_updated: number | null
+  rows_deleted: number | null
+  rows_rejected: number | null
+  seconds: number | null
+  error: string | null
+}
+
+export interface RejectedRecord {
+  warehouse_table: string
+  business_key: string
+  reason: string
+  times_rejected: number
+  first_rejected_at: string
+  last_rejected_at: string
+  resolved_at: string | null
+  is_open: boolean
+  row_data: string
+}
+
+export interface ConsoleAction {
+  action_id: number
+  acted_at: string
+  acted_by: string
+  action: string
+  details: string
+}
+
 export interface ConsoleData {
   generatedAt: string
+  canOperate: boolean
+  schedule: Schedule | null
+  runSteps: RunStep[]
+  rejected: RejectedRecord[]
+  actions: ConsoleAction[]
   sources: SourceTable[]
   warehouseTables: WarehouseTable[]
   analyticsViews: AnalyticsView[]
