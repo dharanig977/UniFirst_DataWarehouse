@@ -18,7 +18,17 @@ Source 2  CRM  Aiven PostgreSQL (CRM)      /                                  ^
 | `render.yaml` | the scheduler (Render cron job) |
 | `.github/workflows/` | tests for both folders, plus **Warehouse ETL** (setup / check / run, by hand) |
 
-The source applications live in their own repositories: [UniFirst_SoftwareDev_SCM](https://github.com/dharanig977/UniFirst_SoftwareDev_SCM) and [UniFirst_CRM](https://github.com/dharanig977/UniFirst_CRM). The ETL only reads them, with read-only logins.
+## Project links
+
+This project has three repositories: two source systems and the cloud data warehouse that reads them. The database consoles need a sign-in; no passwords or connection strings are kept in any repository.
+
+| Part | Repository | Database (console link) |
+|---|---|---|
+| ERP (SCM), source 1 | [UniFirst_SoftwareDev_SCM](https://github.com/dharanig977/UniFirst_SoftwareDev_SCM) | Supabase PostgreSQL: [project dashboard](https://supabase.com/dashboard/project/epvnsalihzmnrkqcxkoc) (schemas `raw`, `reporting`, `api`) |
+| CRM, source 2 | [UniFirst_CRM](https://github.com/dharanig977/UniFirst_CRM) | Aiven PostgreSQL: [Aiven console](https://console.aiven.io/) (database `defaultdb`, schema `crm`) |
+| Cloud data warehouse | [UniFirst_DataWarehouse](https://github.com/dharanig977/UniFirst_DataWarehouse) | Neon PostgreSQL: [project console](https://console.neon.tech/app/projects/tiny-band-79271165) (database `neondb`; report schemas `rpt_inventory`, `rpt_demand`) |
+
+The ETL only reads the two sources, with read-only logins.
 
 ## Report views (schema `analytics`)
 
