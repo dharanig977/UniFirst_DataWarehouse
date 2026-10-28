@@ -1,6 +1,8 @@
 # UniFirst cloud data warehouse
 
-**Portfolio demonstration on synthetic data.** It is not a UniFirst production system, and it does not connect to Microsoft Dynamics.
+> **Independent portfolio demo built on synthetic data, not affiliated with UniFirst.**
+
+It is not a production system and does not connect to Microsoft Dynamics.
 
 **Live ETL console:** https://uni-first-data-warehouse.vercel.app (sign in with an ERP account).
 
